@@ -1,0 +1,3 @@
+D:/computer/ComputationalIntelligence/NeuralNetwork/p1/C_code/cmake-build-debug/CMakeFiles/C_code.dir
+D:/computer/ComputationalIntelligence/NeuralNetwork/p1/C_code/cmake-build-debug/CMakeFiles/edit_cache.dir
+D:/computer/ComputationalIntelligence/NeuralNetwork/p1/C_code/cmake-build-debug/CMakeFiles/rebuild_cache.dir
