@@ -61,28 +61,28 @@ void initialize_ANN() {
     b3 = (int *) malloc(output_layer_size * sizeof(int));
 }
 
-//int **matrix_multiplication(int **matrix1, int **matrix2, int row1, int column1, int column2) {
-//
-//    int **result = (int **) malloc(row1 * sizeof(int *));
-//    for (int i = 0; i < column2; i++)
-//        result[i] = (int *) malloc(column2 * sizeof(int));
-//
-//#pragma omp parallel for
-//    for (int i = 0; i < row1; i++) {
-//
-//#pragma omp parallel for
-//        for (int j = 0; j < column2; j++) {
-//
-//#pragma omp parallel shared(result)
-//#pragma omp for
-//            for (int k = 0; k < column1; k++) {
-//                result[i][j] += matrix1[i][k] * matrix2[k][j];
-//            }
-//        }
-//    }
-//
-//    return result;
-//}
+int **matrix_multiplication(int **matrix1, int **matrix2, int row1, int column1, int column2) {
+
+    int **result = (int **) malloc(row1 * sizeof(int *));
+    for (int i = 0; i < column2; i++)
+        result[i] = (int *) malloc(column2 * sizeof(int));
+
+#pragma omp parallel for
+    for (int i = 0; i < row1; i++) {
+
+#pragma omp parallel for
+        for (int j = 0; j < column2; j++) {
+
+#pragma omp parallel shared(result)
+#pragma omp for
+            for (int k = 0; k < column1; k++) {
+                result[i][j] += matrix1[i][k] * matrix2[k][j];
+            }
+        }
+    }
+
+    return result;
+}
 
 int number_of_train_images;
 int number_of_test_images;
