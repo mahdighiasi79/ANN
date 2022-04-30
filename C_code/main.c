@@ -11,12 +11,12 @@
 #define hidden_layer2_size 16
 #define output_layer_size 10
 
-int **w1;
-int **w2;
-int **w3;
-int *b1;
-int *b2;
-int *b3;
+double **w1;
+double **w2;
+double **w3;
+double *b1;
+double *b2;
+double *b3;
 
 double standard_normal_distribution(int input) {
 
@@ -35,37 +35,37 @@ void initialize_ANN() {
     time_t t = time(NULL);
     srand(t);
 
-    w1 = (int **) malloc(hidden_layer1_size * sizeof(int *));
+    w1 = (double **) malloc(hidden_layer1_size * sizeof(double *));
     for (int i = 0; i < hidden_layer1_size; i++) {
-        w1[i] = (int *) malloc(input_layer_size * sizeof(int));
+        w1[i] = (double *) malloc(input_layer_size * sizeof(double));
         for (int j = 0; j < input_layer_size; j++)
             w1[i][j] = standard_normal_distribution(rand());
     }
 
-    w2 = (int **) malloc(hidden_layer2_size * sizeof(int *));
+    w2 = (double **) malloc(hidden_layer2_size * sizeof(double *));
     for (int i = 0; i < hidden_layer2_size; i++) {
-        w2[i] = (int *) malloc(hidden_layer1_size * sizeof(int));
+        w2[i] = (double *) malloc(hidden_layer1_size * sizeof(double));
         for (int j = 0; j < hidden_layer1_size; j++)
             w2[i][j] = standard_normal_distribution(rand());
     }
 
-    w3 = (int **) malloc(output_layer_size * sizeof(int *));
+    w3 = (double **) malloc(output_layer_size * sizeof(double *));
     for (int i = 0; i < output_layer_size; i++) {
-        w3[i] = (int *) malloc(hidden_layer2_size * sizeof(int));
+        w3[i] = (double *) malloc(hidden_layer2_size * sizeof(double));
         for (int j = 0; j < hidden_layer2_size; j++)
             w3[i][j] = standard_normal_distribution(rand());
     }
 
-    b1 = (int *) malloc(hidden_layer1_size * sizeof(int));
-    b2 = (int *) malloc(hidden_layer2_size * sizeof(int));
-    b3 = (int *) malloc(output_layer_size * sizeof(int));
+    b1 = (double *) malloc(hidden_layer1_size * sizeof(double));
+    b2 = (double *) malloc(hidden_layer2_size * sizeof(double));
+    b3 = (double *) malloc(output_layer_size * sizeof(double));
 }
 
-int **matrix_multiplication(int **matrix1, int **matrix2, int row1, int column1, int column2) {
+double **matrix_multiplication(double **matrix1, double **matrix2, int row1, int column1, int column2) {
 
-    int **result = (int **) malloc(row1 * sizeof(int *));
+    double **result = (double **) malloc(row1 * sizeof(double *));
     for (int i = 0; i < column2; i++)
-        result[i] = (int *) malloc(column2 * sizeof(int));
+        result[i] = (double *) malloc(column2 * sizeof(double));
 
 #pragma omp parallel for
     for (int i = 0; i < row1; i++) {
@@ -82,6 +82,16 @@ int **matrix_multiplication(int **matrix1, int **matrix2, int row1, int column1,
     }
 
     return result;
+}
+
+double sigmoid(double x) {
+    return 1 / (1 + exp(-x));
+}
+
+double *feed_forward(double *input_layer) {
+
+    double *output_layer = (double *) malloc(output_layer_size * sizeof(double));
+    return output_layer;
 }
 
 int number_of_train_images;
