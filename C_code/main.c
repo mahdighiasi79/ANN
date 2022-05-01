@@ -11,6 +11,7 @@
 #define hidden_layer2_size 16
 #define output_layer_size 10
 
+// ANN modules
 double **w1;
 double **w2;
 double **w3;
@@ -18,6 +19,15 @@ double **b1;
 double **b2;
 double **b3;
 
+double **input_layer;
+double **hidden_layer1;
+double **hidden_layer2;
+double **output_layer;
+
+double **z2;
+double **z3;
+double **z4;
+//
 
 double standard_normal_distribution(int input) {
 
@@ -69,6 +79,10 @@ void initialize_ANN() {
     b3 = (double **) malloc(output_layer_size * sizeof(double *));
     for (int i = 0; i < output_layer_size; i++)
         b3[i] = (double *) malloc(sizeof(double));
+
+    input_layer = (double **) malloc(input_layer_size * sizeof(double *));
+    for (int i = 0; i < input_layer_size; i++)
+        input_layer[i] = (double *) malloc(sizeof(double));
 }
 
 
@@ -115,32 +129,28 @@ double sigmoid(double x) {
 }
 
 
-double *feed_forward(const double *input_layer) {
+double *feed_forward(const double *input) {
 
-    double **input = (double **) malloc(input_layer_size * sizeof(double *));
-    for (int i = 0; i < input_layer_size; i++) {
-        input[i] = (double *) malloc(sizeof(double));
-        input[i][0] = input_layer[i];
-    }
+    for (int i = 0; i < input_layer_size; i++)
+        input_layer[i][0] = input[i];
 
-    double **hidden_layer1;
-    double **hidden_layer2;
-    double **output_layer;
-
-    hidden_layer1 = matrix_multiplication(w1, input, hidden_layer1_size, input_layer_size, 1);
+    hidden_layer1 = matrix_multiplication(w1, input_layer, hidden_layer1_size, input_layer_size, 1);
     hidden_layer1 = matrix_addition(hidden_layer1, b1, hidden_layer1_size, 1);
+    z2 = hidden_layer1;
 #pragma omp parallel for
     for (int i = 0; i < hidden_layer1_size; i++)
         hidden_layer1[i][0] = sigmoid(hidden_layer1[i][0]);
 
     hidden_layer2 = matrix_multiplication(w2, hidden_layer1, hidden_layer2_size, hidden_layer1_size, 1);
     hidden_layer2 = matrix_addition(hidden_layer2, b2, hidden_layer2_size, 1);
+    z3 = hidden_layer2;
 #pragma omp parallel for
     for (int i = 0; i < hidden_layer2_size; i++)
         hidden_layer2[i][0] = sigmoid(hidden_layer2[i][0]);
 
     output_layer = matrix_multiplication(w3, hidden_layer2, output_layer_size, hidden_layer2_size, 1);
     output_layer = matrix_addition(output_layer, b3, output_layer_size, 1);
+    z4 = output_layer;
 #pragma omp parallel for
     for (int i = 0; i < output_layer_size; i++)
         output_layer[i][0] = sigmoid(output_layer[i][0]);
