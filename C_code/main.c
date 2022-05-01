@@ -83,12 +83,8 @@ double **matrix_multiplication(double **matrix1, double **matrix2, int row1, int
 
 #pragma omp parallel for
         for (int j = 0; j < column2; j++) {
-
-#pragma omp parallel shared(result)
-#pragma omp for
-            for (int k = 0; k < column1; k++) {
+            for (int k = 0; k < column1; k++)
                 result[i][j] += matrix1[i][k] * matrix2[k][j];
-            }
         }
     }
 
