@@ -14,9 +14,10 @@
 double **w1;
 double **w2;
 double **w3;
-double *b1;
-double *b2;
-double *b3;
+double **b1;
+double **b2;
+double **b3;
+
 
 double standard_normal_distribution(int input) {
 
@@ -29,6 +30,7 @@ double standard_normal_distribution(int input) {
 
     return result;
 }
+
 
 void initialize_ANN() {
 
@@ -56,10 +58,19 @@ void initialize_ANN() {
             w3[i][j] = standard_normal_distribution(rand());
     }
 
-    b1 = (double *) malloc(hidden_layer1_size * sizeof(double));
-    b2 = (double *) malloc(hidden_layer2_size * sizeof(double));
-    b3 = (double *) malloc(output_layer_size * sizeof(double));
+    b1 = (double **) malloc(hidden_layer1_size * sizeof(double *));
+    for (int i = 0; i < hidden_layer1_size; i++)
+        b1[i] = (double *) malloc(sizeof(double));
+
+    b2 = (double **) malloc(hidden_layer2_size * sizeof(double *));
+    for (int i = 0; i < hidden_layer2_size; i++)
+        b2[i] = (double *) malloc(sizeof(double));
+
+    b3 = (double **) malloc(output_layer_size * sizeof(double *));
+    for (int i = 0; i < output_layer_size; i++)
+        b3[i] = (double *) malloc(sizeof(double));
 }
+
 
 double **matrix_multiplication(double **matrix1, double **matrix2, int row1, int column1, int column2) {
 
@@ -84,15 +95,68 @@ double **matrix_multiplication(double **matrix1, double **matrix2, int row1, int
     return result;
 }
 
+
+double **matrix_addition(double **matrix1, double **matrix2, int row, int column) {
+
+    double **result = (double **) malloc(row * sizeof(double *));
+    for (int i = 0; i < row; i++)
+        result[i] = (double *) malloc(column * sizeof(double));
+
+#pragma omp parallel for
+    for (int i = 0; i < row; i++) {
+
+#pragma omp parallel for
+        for (int j = 0; j < column; j++)
+            result[i][j] = matrix1[i][j] + matrix2[i][j];
+    }
+
+    return result;
+}
+
+
 double sigmoid(double x) {
     return 1 / (1 + exp(-x));
 }
 
-double *feed_forward(double *input_layer) {
 
-    double *output_layer = (double *) malloc(output_layer_size * sizeof(double));
-    return output_layer;
+double *feed_forward(const double *input_layer) {
+
+    double **input = (double **) malloc(input_layer_size * sizeof(double *));
+    for (int i = 0; i < input_layer_size; i++) {
+        input[i] = (double *) malloc(sizeof(double));
+        input[i][0] = input_layer[i];
+    }
+
+    double **hidden_layer1;
+    double **hidden_layer2;
+    double **output_layer;
+
+    hidden_layer1 = matrix_multiplication(w1, input, hidden_layer1_size, input_layer_size, 1);
+    hidden_layer1 = matrix_addition(hidden_layer1, b1, hidden_layer1_size, 1);
+#pragma omp parallel for
+    for (int i = 0; i < hidden_layer1_size; i++)
+        hidden_layer1[i][0] = sigmoid(hidden_layer1[i][0]);
+
+    hidden_layer2 = matrix_multiplication(w2, hidden_layer1, hidden_layer2_size, hidden_layer1_size, 1);
+    hidden_layer2 = matrix_addition(hidden_layer2, b2, hidden_layer2_size, 1);
+#pragma omp parallel for
+    for (int i = 0; i < hidden_layer2_size; i++)
+        hidden_layer2[i][0] = sigmoid(hidden_layer2[i][0]);
+
+    output_layer = matrix_multiplication(w3, hidden_layer2, output_layer_size, hidden_layer2_size, 1);
+    output_layer = matrix_addition(output_layer, b3, output_layer_size, 1);
+#pragma omp parallel for
+    for (int i = 0; i < output_layer_size; i++)
+        output_layer[i][0] = sigmoid(output_layer[i][0]);
+
+    double *result = (double *) malloc(output_layer_size * sizeof(double));
+#pragma omp parallel for
+    for (int i = 0; i < output_layer_size; i++)
+        result[i] = output_layer[i][0];
+
+    return result;
 }
+
 
 int number_of_train_images;
 int number_of_test_images;
@@ -102,6 +166,7 @@ int *train_labels;
 int *test_labels;
 int **train_images;
 int **test_images;
+
 
 int readInteger(FILE *fp) {
 
@@ -116,6 +181,7 @@ int readInteger(FILE *fp) {
 
     return result;
 }
+
 
 int **readImages(char *address, int t_s) {
 
@@ -150,6 +216,7 @@ int **readImages(char *address, int t_s) {
     return data;
 }
 
+
 int *readLabels(char *address) {
 
     FILE *fp = fopen(address, "rb");
@@ -166,6 +233,7 @@ int *readLabels(char *address) {
     return labels;
 }
 
+
 void getDataset() {
 
     train_images = readImages("D:\\computer\\ComputationalIntelligence\\NeuralNetwork\\p1\\train-images.idx3-ubyte", 1);
@@ -174,17 +242,16 @@ void getDataset() {
     test_labels = readLabels("D:\\computer\\ComputationalIntelligence\\NeuralNetwork\\p1\\t10k-labels.idx1-ubyte");
 
     for (int i = 0; i < number_of_train_images; i++) {
-        for (int j = 0; j < rows * columns; j++) {
+        for (int j = 0; j < rows * columns; j++)
             train_images[i][j] /= 256;
-        }
     }
 
     for (int i = 0; i < number_of_test_images; i++) {
-        for (int j = 0; j < rows * columns; j++) {
+        for (int j = 0; j < rows * columns; j++)
             test_images[i][j] /= 256;
-        }
     }
 }
+
 
 int main() {
     getDataset();
