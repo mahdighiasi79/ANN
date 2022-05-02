@@ -6,28 +6,19 @@
 
 #define magic_number_size 4
 
-#define input_layer_size 784
-#define hidden_layer1_size 16
-#define hidden_layer2_size 16
-#define output_layer_size 10
+typedef struct ann {
 
-// ANN modules
-double **w2;
-double **w3;
-double **w4;
-double **b2;
-double **b3;
-double **b4;
+    int number_of_layers;
+    int *layers_sizes;
 
-double **input_layer;
-double **hidden_layer1;
-double **hidden_layer2;
-double **output_layer;
+    double ***w;
+    double ***b;
 
-double **z2;
-double **z3;
-double **z4;
-//
+    double ***layers;
+
+    double ***z;
+
+} ANN;
 
 double standard_normal_distribution(int input) {
 
@@ -42,47 +33,49 @@ double standard_normal_distribution(int input) {
 }
 
 
-void initialize_ANN() {
+ANN *initialize_ANN(int num_layers, int *layers_sizes) {
 
     time_t t = time(NULL);
     srand(t);
 
-    w2 = (double **) malloc(hidden_layer1_size * sizeof(double *));
-    for (int i = 0; i < hidden_layer1_size; i++) {
-        w2[i] = (double *) malloc(input_layer_size * sizeof(double));
-        for (int j = 0; j < input_layer_size; j++)
-            w2[i][j] = standard_normal_distribution(rand());
+    ANN *ann = (ANN *) malloc(sizeof(ANN));
+    ann->number_of_layers = num_layers;
+    ann->layers_sizes = layers_sizes;
+
+
+    ann->w = (double ***) malloc((num_layers - 1) * sizeof(double **));
+
+    for (int i = 0; i < num_layers - 1; i++) {
+        ann->w[i] = (double **) malloc(layers_sizes[i + 1] * sizeof(double *));
+
+        for (int j = 0; j < layers_sizes[i + 1]; j++) {
+            ann->w[i][j] = (double *) malloc(layers_sizes[i] * sizeof(double));
+
+            for (int k = 0; k < layers_sizes[i]; k++)
+                ann->w[i][j][k] = standard_normal_distribution(rand());
+        }
     }
 
-    w3 = (double **) malloc(hidden_layer2_size * sizeof(double *));
-    for (int i = 0; i < hidden_layer2_size; i++) {
-        w3[i] = (double *) malloc(hidden_layer1_size * sizeof(double));
-        for (int j = 0; j < hidden_layer1_size; j++)
-            w3[i][j] = standard_normal_distribution(rand());
+
+    ann->b = (double ***) malloc((num_layers - 1) * sizeof(double **));
+
+    for (int i = 0; i < num_layers - 1; i++) {
+        int neurons = layers_sizes[i + 1];
+        ann->b[i] = (double **) malloc(neurons * sizeof(double *));
+
+        for (int j = 0; j < neurons; j++) {
+            ann->b[i][j] = (double *) malloc(sizeof(double));
+            ann->b[i][j][0] = 0;
+        }
     }
 
-    w4 = (double **) malloc(output_layer_size * sizeof(double *));
-    for (int i = 0; i < output_layer_size; i++) {
-        w4[i] = (double *) malloc(hidden_layer2_size * sizeof(double));
-        for (int j = 0; j < hidden_layer2_size; j++)
-            w4[i][j] = standard_normal_distribution(rand());
-    }
 
-    b2 = (double **) malloc(hidden_layer1_size * sizeof(double *));
-    for (int i = 0; i < hidden_layer1_size; i++)
-        b2[i] = (double *) malloc(sizeof(double));
+    ann->layers = (double ***) malloc(num_layers * sizeof(double **));
+    ann->layers[0] = (double **) malloc(layers_sizes[0] * sizeof(double *));
 
-    b3 = (double **) malloc(hidden_layer2_size * sizeof(double *));
-    for (int i = 0; i < hidden_layer2_size; i++)
-        b3[i] = (double *) malloc(sizeof(double));
+    ann->z = (double ***) malloc((num_layers - 1) * sizeof(double **));
 
-    b4 = (double **) malloc(output_layer_size * sizeof(double *));
-    for (int i = 0; i < output_layer_size; i++)
-        b4[i] = (double *) malloc(sizeof(double));
-
-    input_layer = (double **) malloc(input_layer_size * sizeof(double *));
-    for (int i = 0; i < input_layer_size; i++)
-        input_layer[i] = (double *) malloc(sizeof(double));
+    return ann;
 }
 
 
@@ -129,36 +122,32 @@ double sigmoid(double x) {
 }
 
 
-double *feed_forward(const double *input) {
+double *feed_forward(const double *input, ANN *ann) {
 
-    for (int i = 0; i < input_layer_size; i++)
-        input_layer[i][0] = input[i];
+    for (int i = 0; i < ann->layers_sizes[0]; i++)
+        ann->layers[0][i][0] = input[i];
 
-    hidden_layer1 = matrix_multiplication(w2, input_layer, hidden_layer1_size, input_layer_size, 1);
-    hidden_layer1 = matrix_addition(hidden_layer1, b2, hidden_layer1_size, 1);
-    z2 = hidden_layer1;
+    for (int i = 0; i < ann->number_of_layers - 1; i++) {
+
+        double **weights = ann->w[i];
+        double **layer = ann->layers[i];
+        double **biases = ann->b[i];
+        int row = ann->layers_sizes[i + 1];
+        int column = ann->layers_sizes[i];
+
+        double **hidden_layer = matrix_multiplication(weights, layer, row, column, 1);
+        hidden_layer = matrix_addition(hidden_layer, biases, row, 1);
+        ann->z[i] = hidden_layer;
 #pragma omp parallel for
-    for (int i = 0; i < hidden_layer1_size; i++)
-        hidden_layer1[i][0] = sigmoid(hidden_layer1[i][0]);
+        for (int j = 0; j < row; j++)
+            hidden_layer[j][0] = sigmoid(hidden_layer[j][0]);
+        ann->layers[i + 1] = hidden_layer;
+    }
 
-    hidden_layer2 = matrix_multiplication(w3, hidden_layer1, hidden_layer2_size, hidden_layer1_size, 1);
-    hidden_layer2 = matrix_addition(hidden_layer2, b3, hidden_layer2_size, 1);
-    z3 = hidden_layer2;
-#pragma omp parallel for
-    for (int i = 0; i < hidden_layer2_size; i++)
-        hidden_layer2[i][0] = sigmoid(hidden_layer2[i][0]);
-
-    output_layer = matrix_multiplication(w4, hidden_layer2, output_layer_size, hidden_layer2_size, 1);
-    output_layer = matrix_addition(output_layer, b4, output_layer_size, 1);
-    z4 = output_layer;
-#pragma omp parallel for
+    int output_layer_size = ann->layers_sizes[ann->number_of_layers - 1];
+    double *result = (double *) malloc( output_layer_size * sizeof(double));
     for (int i = 0; i < output_layer_size; i++)
-        output_layer[i][0] = sigmoid(output_layer[i][0]);
-
-    double *result = (double *) malloc(output_layer_size * sizeof(double));
-#pragma omp parallel for
-    for (int i = 0; i < output_layer_size; i++)
-        result[i] = output_layer[i][0];
+        result[i] = ann->layers[ann->number_of_layers - 1][i][0];
 
     return result;
 }
@@ -261,6 +250,8 @@ void getDataset() {
 
 int main() {
     getDataset();
-    initialize_ANN();
+    int number_of_layers = 4;
+    int layers_sizes[] = {784, 16, 16, 10};
+    initialize_ANN(number_of_layers, layers_sizes);
     return 0;
 }
