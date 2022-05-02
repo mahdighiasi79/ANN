@@ -3,6 +3,10 @@
 #include <omp.h>
 #include <math.h>
 #include <time.h>
+#include <string.h>
+
+#include "Matrix.h"
+#include "Activation_functions.h"
 
 #define magic_number_size 4
 
@@ -17,6 +21,8 @@ typedef struct ann {
     double ***layers;
 
     double ***z;
+
+    char *activation_function;
 
 } ANN;
 
@@ -33,7 +39,7 @@ double standard_normal_distribution(int input) {
 }
 
 
-ANN *initialize_ANN(int num_layers, int *layers_sizes) {
+ANN *initialize_ANN(int num_layers, int *layers_sizes, char *activation_function) {
 
     time_t t = time(NULL);
     srand(t);
@@ -79,47 +85,7 @@ ANN *initialize_ANN(int num_layers, int *layers_sizes) {
 }
 
 
-double **matrix_multiplication(double **matrix1, double **matrix2, int row1, int column1, int column2) {
 
-    double **result = (double **) malloc(row1 * sizeof(double *));
-    for (int i = 0; i < column2; i++)
-        result[i] = (double *) malloc(column2 * sizeof(double));
-
-#pragma omp parallel for
-    for (int i = 0; i < row1; i++) {
-
-#pragma omp parallel for
-        for (int j = 0; j < column2; j++) {
-            for (int k = 0; k < column1; k++)
-                result[i][j] += matrix1[i][k] * matrix2[k][j];
-        }
-    }
-
-    return result;
-}
-
-
-double **matrix_addition(double **matrix1, double **matrix2, int row, int column) {
-
-    double **result = (double **) malloc(row * sizeof(double *));
-    for (int i = 0; i < row; i++)
-        result[i] = (double *) malloc(column * sizeof(double));
-
-#pragma omp parallel for
-    for (int i = 0; i < row; i++) {
-
-#pragma omp parallel for
-        for (int j = 0; j < column; j++)
-            result[i][j] = matrix1[i][j] + matrix2[i][j];
-    }
-
-    return result;
-}
-
-
-double sigmoid(double x) {
-    return 1 / (1 + exp(-x));
-}
 
 
 double *feed_forward(const double *input, ANN *ann) {
@@ -138,9 +104,11 @@ double *feed_forward(const double *input, ANN *ann) {
         double **hidden_layer = matrix_multiplication(weights, layer, row, column, 1);
         hidden_layer = matrix_addition(hidden_layer, biases, row, 1);
         ann->z[i] = hidden_layer;
+
 #pragma omp parallel for
         for (int j = 0; j < row; j++)
-            hidden_layer[j][0] = sigmoid(hidden_layer[j][0]);
+            hidden_layer[j][0] = call(hidden_layer[j][0], ann->activation_function);
+
         ann->layers[i + 1] = hidden_layer;
     }
 
@@ -150,6 +118,14 @@ double *feed_forward(const double *input, ANN *ann) {
         result[i] = ann->layers[ann->number_of_layers - 1][i][0];
 
     return result;
+}
+
+double back_propagation(int desired_layer, int row, int column, int current_layer, double derivation) {
+
+    if (desired_layer == current_layer) {
+
+
+    }
 }
 
 
@@ -252,6 +228,6 @@ int main() {
     getDataset();
     int number_of_layers = 4;
     int layers_sizes[] = {784, 16, 16, 10};
-    initialize_ANN(number_of_layers, layers_sizes);
+    initialize_ANN(number_of_layers, layers_sizes, "sigmoid");
     return 0;
 }
