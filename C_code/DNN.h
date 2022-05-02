@@ -88,9 +88,6 @@ ANN *initialize_ANN(int num_layers, int *layers_sizes, char *activation_function
 }
 
 
-
-
-
 double *feed_forward(const double *input, ANN *ann) {
 
     for (int i = 0; i < ann->layers_sizes[0]; i++)
@@ -123,13 +120,44 @@ double *feed_forward(const double *input, ANN *ann) {
     return result;
 }
 
-double back_propagation(int desired_layer, int row, int column, int current_layer, double derivation) {
+double Derivation(ANN ann, const int *weight_position, const int *neuron_position, double derivation) {
 
-    if (desired_layer == current_layer) {
+    int weight_layer = weight_position[0];
+    int weight_row = weight_position[1];
+    int weight_column = weight_position[2];
 
+    int neuron_layer = neuron_position[0];
+    int neuron_index = neuron_position[1];
 
+    if (weight_layer == neuron_layer) {
+
+        if (neuron_index != weight_row)
+            return 0;
+
+        double z = ann.z[neuron_layer - 2][neuron_index - 1][0];
+        double neuron = ann.layers[neuron_layer - 2][weight_column - 1][0];
+        return d_call(z, ann.activation_function) * neuron * derivation;
     }
+
+
+    int next_layer = neuron_layer - 1;
+    int next_layer_size = ann.layers_sizes[next_layer - 1];
+    double z = ann.z[neuron_layer - 2][neuron_index - 1][0];
+    double **weights = ann.w[neuron_layer - 2];
+    double derivation_copy = derivation;
+
+    for (int i = 0; i < next_layer_size; i++) {
+        double s = d_call(z, ann.activation_function);
+        double w = weights[neuron_index - 1][i];
+        int *newNeuron_position = (int *) malloc(2 * sizeof(int));
+        newNeuron_position[0] = neuron_layer - 1;
+        newNeuron_position[1] = i;
+        derivation += s * w * Derivation(ann, weight_position, newNeuron_position, derivation_copy);
+    }
+
+    return derivation;
 }
+
 
 #endif //C_CODE_DNN_H
 
