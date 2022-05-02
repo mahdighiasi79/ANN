@@ -3,6 +3,7 @@
 //
 
 #include <stdlib.h>
+#include <omp.h>
 
 #ifndef C_CODE_MATRIX_H
 #define C_CODE_MATRIX_H
