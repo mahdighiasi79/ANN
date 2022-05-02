@@ -50,6 +50,7 @@ ANN *initialize_ANN(int num_layers, int *layers_sizes, char *activation_function
     ANN *ann = (ANN *) malloc(sizeof(ANN));
     ann->number_of_layers = num_layers;
     ann->layers_sizes = layers_sizes;
+    ann->activation_function = activation_function;
 
 
     ann->w = (double ***) malloc((num_layers - 1) * sizeof(double **));
@@ -143,14 +144,14 @@ double Derivation(ANN ann, const int *weight_position, const int *neuron_positio
     int next_layer = neuron_layer - 1;
     int next_layer_size = ann.layers_sizes[next_layer - 1];
     double z = ann.z[neuron_layer - 2][neuron_index - 1][0];
+    double s = d_call(z, ann.activation_function);
     double **weights = ann.w[neuron_layer - 2];
     double derivation_copy = derivation;
+    int *newNeuron_position = (int *) malloc(2 * sizeof(int));
+    newNeuron_position[0] = neuron_layer - 1;
 
     for (int i = 0; i < next_layer_size; i++) {
-        double s = d_call(z, ann.activation_function);
         double w = weights[neuron_index - 1][i];
-        int *newNeuron_position = (int *) malloc(2 * sizeof(int));
-        newNeuron_position[0] = neuron_layer - 1;
         newNeuron_position[1] = i;
         derivation += s * w * Derivation(ann, weight_position, newNeuron_position, derivation_copy);
     }
