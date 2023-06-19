@@ -12,7 +12,7 @@ The activation function of the hidden layers is ReLU. However, as we are doing a
 
 We have used the cross entropy loss function because it is suitable for classification tasks.
 The algorithm used for optimization is Adam with hyperparameters as follow:
-learning rate: 0.01
+learning rate: 0.001
 batch_size = 50
 epochs = 10
 
